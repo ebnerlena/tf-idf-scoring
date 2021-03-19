@@ -1,14 +1,12 @@
 export default class Entry {
     constructor(term, documents = new Map()) {
-
-        this.term = term
-        this.idf = 0
+        this.term = term;
+        this.idf = 0;
         this.documents = documents;
     }
 
     calculateIDF(filesTotal) {
-        
-        this.idf = filesTotal/this.documents.size
+        this.idf = filesTotal / this.documents.size;
     }
 
     print() {
