@@ -2,6 +2,7 @@ export default class Entry {
     constructor(term, documents = new Map()) {
         this.term = term;
         this.idf = 0;
+        this.score = 0;
         this.documents = documents;
     }
 

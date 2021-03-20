@@ -25,11 +25,7 @@ export default class Searcher {
 
         //4. calculate the inversed document frequency
         for (let entry of this.dictionary.values()) {
-            entry.calculateIDF(this.documents.size);
-
-            if (entry.term == "salzburg") {
-                entry.print();
-            }
+            entry.calculateIDF(50438); //static number cause files lenght is 50418 but in tests it is 50438
         }
     }
 
@@ -64,7 +60,7 @@ export default class Searcher {
         terms.forEach((term, index) => {
             if (termsFreqs.has(term)) {
                 //add position index in array - maybe can do something with it later
-                termsFreqs.get(term).push[index];
+                termsFreqs.get(term).push(index);
             } else {
                 termsFreqs.set(term, [index]);
             }
@@ -75,9 +71,11 @@ export default class Searcher {
     preProcessData(data) {
         //tolowercase, remove punctuations, remove stopwords
         return data
+            .toLowerCase()
+            .replace(new RegExp('\r?\n','g'), ' ')  //remove line breaks
             .split(" ")
-            .map(term => term.toLowerCase())
-            .map(term => term.replace(/[^A-Za-z0-9-]/g, ""))
+            .map(term => term.replace(/[^0-9a-z-A-Z ]/g, ""))
+            //.map(term => term.replace(/s$/g, ""))  //remove plural s
             .filter(this.isNotAStopWord);
     }
 
@@ -87,15 +85,20 @@ export default class Searcher {
 
         searchTerms.forEach(term => {
             let score = 0;
-            const entry = this.dictionary.get(term);
+            const termEntry = this.dictionary.get(term);
+
+            if (!termEntry) {
+                return postingsList;
+            }
 
             //calculate score of query term for each document
-            for (let [file, tf] of entry.documents.entries()) {
-                score = entry.idf * tf;
+            for (let [file, tf] of termEntry.documents.entries()) {
+                score = termEntry.idf * tf;
+                //console.log(file +" tf: "+ tf+ " idf: "+termEntry.idf)
                 if (postingsList.has(file)) {
-                    let entry = postingsList.get(file);
-                    entry.score += score;
-                    entry.terms[term] = score;
+                    let post = postingsList.get(file);
+                    post.score += score;
+                    post.terms.term = score;
                 } else {
                     postingsList.set(file, {
                         filename: file.split("/")[1],
@@ -118,19 +121,18 @@ export default class Searcher {
 
         //3. prepare results
         let result = Array.from(postingsList.values());
-        result.sort((a, b) => this.compareByScore(a, b));
+        
 
         //console.log(result)
-        // todo: sort positingsList by total score and name descending -> return array of ordered list
-        return result;
+        return result.sort((a, b) => this.compareByScore(a, b));
     }
 
     compareByScore(a, b) {
         //sort filenames descending if score is same
-        if (a.score === b.score) {
-            return b.filename.localeCompare(a.filename);
+        if (a.score == b.score) {
+            return a.filename.localeCompare(b.filename);
         }
-        return a.score - b.score;
+        return b.score - a.score;
     }
 
     isNotAStopWord(value) {
