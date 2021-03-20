@@ -70,13 +70,15 @@ export default class Searcher {
 
     preProcessData(data) {
         //tolowercase, remove punctuations, remove stopwords
-        return data
-            .toLowerCase()
-            .replace(new RegExp('\r?\n','g'), ' ')  //remove line breaks
-            .split(" ")
-            .map(term => term.replace(/[^0-9a-z-A-Z ]/g, ""))
-            //.map(term => term.replace(/s$/g, ""))  //remove plural s
-            .filter(this.isNotAStopWord);
+        return (
+            data
+                .toLowerCase()
+                .replace(new RegExp("\r?\n", "g"), " ") //remove line breaks
+                .split(" ")
+                .map(term => term.replace(/[^0-9a-z-A-Z ]/g, ""))
+                //.map(term => term.replace(/s$/g, ""))  //remove plural s
+                .filter(this.isNotAStopWord)
+        );
     }
 
     // used at query time
@@ -94,11 +96,11 @@ export default class Searcher {
             //calculate score of query term for each document
             for (let [file, tf] of termEntry.documents.entries()) {
                 score = termEntry.idf * tf;
-                //console.log(file +" tf: "+ tf+ " idf: "+termEntry.idf)
+                console.log(file + " tf: " + tf + " idf: " + termEntry.idf);
                 if (postingsList.has(file)) {
                     let post = postingsList.get(file);
                     post.score += score;
-                    post.terms.term = score;
+                    post.terms[term] = score;
                 } else {
                     postingsList.set(file, {
                         filename: file.split("/")[1],
@@ -121,7 +123,6 @@ export default class Searcher {
 
         //3. prepare results
         let result = Array.from(postingsList.values());
-        
 
         //console.log(result)
         return result.sort((a, b) => this.compareByScore(a, b));
