@@ -25,13 +25,13 @@ export default class Searcher {
 
         //4. calculate the inversed document frequency
         for (let entry of this.dictionary.values()) {
-            entry.calculateIDF(50438); //static number cause files lenght is 50418 but in tests it is 50438
+            entry.calculateIDF(this.documents.size);
         }
     }
 
     setupDictionary(terms, file) {
         //calculate frequency of each term in file (distinct)
-        const termsFreqs = this.calculateTermsFrequencies(terms);
+        let termsFreqs = this.calculateTermsFrequencies(terms);
 
         for (let [term, values] of termsFreqs.entries()) {
             if (!this.dictionary.has(term)) {
@@ -46,11 +46,6 @@ export default class Searcher {
                 );
             } else {
                 this.dictionary.get(term).documents.set(file, values.length);
-            }
-
-            if (term.includes("-")) {
-                let splitted = term.split("-");
-                this.setupDictionary(splitted, file);
             }
         }
     }
@@ -70,15 +65,32 @@ export default class Searcher {
 
     preProcessData(data) {
         //tolowercase, remove punctuations, remove stopwords
-        return (
-            data
-                .toLowerCase()
-                .replace(new RegExp("\r?\n", "g"), " ") //remove line breaks
-                .split(" ")
-                .map(term => term.replace(/[^0-9a-z-A-Z ]/g, ""))
-                //.map(term => term.replace(/s$/g, ""))  //remove plural s
-                .filter(this.isNotAStopWord)
-        );
+
+        var splitWords = data
+            .toLowerCase()
+            .replace(new RegExp("\r?\n", "g"), " ") //remove line ends
+            .split(/\s+|\.+|\,/); //split by whitespace . ,
+
+        //filters whitespace out that is left from the split
+        splitWords = splitWords.filter(word => {
+            return word;
+        });
+
+        //handle - delimiter
+        splitWords.forEach(term => {
+            let delimiters;
+            if (term.includes("-")) {
+                delimiters = term.split("-");
+                delimiters.forEach(part => {
+                    splitWords.push(part);
+                });
+            }
+        });
+
+        return splitWords
+            .map(term => term.replace(/[^0-9a-z-A-Z]/g, ""))
+            .map(term => term.replace(/s$/g, "")) //remove plural s
+            .filter(this.isNotAStopWord);
     }
 
     // used at query time
@@ -96,7 +108,7 @@ export default class Searcher {
             //calculate score of query term for each document
             for (let [file, tf] of termEntry.documents.entries()) {
                 score = termEntry.idf * tf;
-                console.log(file + " tf: " + tf + " idf: " + termEntry.idf);
+
                 if (postingsList.has(file)) {
                     let post = postingsList.get(file);
                     post.score += score;
@@ -117,21 +129,34 @@ export default class Searcher {
         //query time
         //1. preprocess query terms
         let searchTerms = this.preProcessData(query);
+        let postingsList = new Map();
+
+        //returning all files when searchterm = ""
+        if (searchTerms.length < 1) {
+            for (let [file, length] of this.documents.entries()) {
+                postingsList.set(file, {
+                    filename: file.split("/")[1],
+                    score: length,
+                    terms: {}
+                });
+            }
+            return Array.from(postingsList.values());
+        }
 
         //2. for each query term calculate score for each document
-        let postingsList = this.calculateScore(searchTerms);
+        postingsList = this.calculateScore(searchTerms);
 
         //3. prepare results
         let result = Array.from(postingsList.values());
 
-        //console.log(result)
+        //4. sort results descending
         return result.sort((a, b) => this.compareByScore(a, b));
     }
 
     compareByScore(a, b) {
         //sort filenames descending if score is same
         if (a.score == b.score) {
-            return a.filename.localeCompare(b.filename);
+            return a.filename < b.filename ? -1 : b.filename < a.filename ? 1 : 0;
         }
         return b.score - a.score;
     }
