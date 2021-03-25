@@ -12,12 +12,12 @@ export default class Searcher {
         //index time
         files.forEach(file => {
             let data = fs.readFileSync(file, "utf8");
-
+            file = file.split("/").pop();
             //1. retrieve data and preprocess
             let terms = this.preProcessData(data);
 
             // 2. safe document length of file for normalisation
-            this.documents.set(file, terms.length);
+            this.documents.set(file, data.length);
 
             // 3. index time: calculate frequencies and setup postingsList of terms
             this.setupDictionary(terms, file);
@@ -39,7 +39,6 @@ export default class Searcher {
                     term,
                     new Entry(
                         term,
-
                         //postingsList = Map with files as key and frequencies of term as value
                         new Map().set(file, values.length)
                     )
@@ -97,10 +96,14 @@ export default class Searcher {
     calculateScore(searchTerms) {
         let postingsList = new Map();
 
+        // prevent spam of words
+        searchTerms = searchTerms.filter(this.distinct);
+
         searchTerms.forEach(term => {
             let score = 0;
             const termEntry = this.dictionary.get(term);
 
+            // if term is not found in any file
             if (!termEntry) {
                 return postingsList;
             }
@@ -115,7 +118,7 @@ export default class Searcher {
                     post.terms[term] = score;
                 } else {
                     postingsList.set(file, {
-                        filename: file.split("/")[1],
+                        filename: file,
                         score: score,
                         terms: { [term]: score }
                     });
@@ -163,5 +166,9 @@ export default class Searcher {
 
     isNotAStopWord(value) {
         return !stopwords.includes(value);
+    }
+
+    distinct(value, index, self) {
+        return self.indexOf(value) === index;
     }
 }
