@@ -46,7 +46,7 @@ export default class Searcher {
 
                         //normalized variant - but then the result are completly different
                         //e.g. lost of austria_bundesliga cause they are short files in comparision to Archbishopric_of_Salzburg
-                        //new Map().set(file, values.length/this.documents.get(file))  
+                        //new Map().set(file, values.length/this.documents.get(file))
                     )
                 );
             } else {
