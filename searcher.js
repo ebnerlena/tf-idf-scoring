@@ -9,6 +9,8 @@ export default class Searcher {
         //for storing file lengths needed for normalization
         this.documents = new Map();
 
+        //var merged = new Map([...map1, ...map2, ...map3])
+
         //index time
         files.forEach(file => {
             let data = fs.readFileSync(file, "utf8");
@@ -41,10 +43,15 @@ export default class Searcher {
                         term,
                         //postingsList = Map with files as key and frequencies of term as value
                         new Map().set(file, values.length)
+
+                        //normalized variant - but then the result are completly different
+                        //e.g. lost of austria_bundesliga cause they are short files in comparision to Archbishopric_of_Salzburg
+                        //new Map().set(file, values.length/this.documents.get(file))  
                     )
                 );
             } else {
                 this.dictionary.get(term).documents.set(file, values.length);
+                //this.dictionary.get(term).documents.set(file, values.length/this.documents.get(file));
             }
         }
     }
@@ -138,9 +145,7 @@ export default class Searcher {
         if (searchTerms.length < 1) {
             for (let [file, length] of this.documents.entries()) {
                 postingsList.set(file, {
-                    filename: file.split("/")[1],
-                    score: length,
-                    terms: {}
+                    filename: file
                 });
             }
             return Array.from(postingsList.values());
