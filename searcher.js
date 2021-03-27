@@ -9,8 +9,6 @@ export default class Searcher {
         //for storing file lengths needed for normalization
         this.documents = new Map();
 
-        //var merged = new Map([...map1, ...map2, ...map3])
-
         //index time
         files.forEach(file => {
             let data = fs.readFileSync(file, "utf8");
