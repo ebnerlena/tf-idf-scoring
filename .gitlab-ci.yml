@@ -2,7 +2,7 @@ image: node:latest
 
 default:
     tags:
-        - "node:latest"
+        - "node-latest"
 
 stages:
     - build
