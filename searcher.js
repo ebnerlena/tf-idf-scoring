@@ -75,11 +75,6 @@ export default class Searcher {
             .replace(new RegExp("\r?\n", "g"), " ") //remove line ends
             .split(/\s+|\.+|\,/); //split by whitespace . ,
 
-        //filters whitespace out that is left from the split
-        splitWords = splitWords.filter(word => {
-            return word;
-        });
-
         //handle - delimiter
         splitWords.forEach(term => {
             let delimiters;
@@ -92,7 +87,7 @@ export default class Searcher {
         });
 
         return splitWords
-            .map(term => term.replace(/[^0-9a-z-A-Z]/g, ""))
+            .map(term => term.replace(/[^0-9a-z-A-Z]/g, "")) //remove everything apart from numbers, letters
             .map(term => term.replace(/s$/g, "")) //remove plural s
             .filter(this.isNotAStopWord);
     }
@@ -134,13 +129,10 @@ export default class Searcher {
     }
 
     search(query) {
-        //query time
-        //1. preprocess query terms
-        let searchTerms = this.preProcessData(query);
         let postingsList = new Map();
 
         //returning all files when searchterm = ""
-        if (searchTerms.length < 1) {
+        if (query == "") {
             for (let [file, length] of this.documents.entries()) {
                 postingsList.set(file, {
                     filename: file
@@ -148,6 +140,10 @@ export default class Searcher {
             }
             return Array.from(postingsList.values());
         }
+
+        //query time
+        //1. preprocess query terms
+        let searchTerms = this.preProcessData(query);
 
         //2. for each query term calculate score for each document
         postingsList = this.calculateScore(searchTerms);
@@ -162,7 +158,7 @@ export default class Searcher {
     compareByScore(a, b) {
         //sort filenames descending if score is same
         if (a.score == b.score) {
-            return a.filename < b.filename ? -1 : b.filename < a.filename ? 1 : 0;
+            return a.filename < b.filename ? -1 : 1;
         }
         return b.score - a.score;
     }
